@@ -7,7 +7,7 @@ A 1v1 card duel in a 3D medieval tavern, themed on RuneScape. You sit at a table
 It is a static web page with no build step and no server code. Any static file server works:
 
 ```
-cd gielinor-gambit
+cd runescapecards
 python3 -m http.server 8000
 # open http://localhost:8000
 ```
