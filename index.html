@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Gielinor Gambit</title>
+  <meta name="description" content="A 1v1 RuneScape-themed card duel in a 3D medieval tavern." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="vendor/peerjs.min.js"></script>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="vignette"></div>
+  <div id="hurt"></div>
+  <div id="overlay"></div>
+
+  <div id="loading"><p>Loading - please wait.</p><div class="spinner"></div></div>
+
+  <!-- ===================== in-game HUD ===================== -->
+  <div id="overhead">
+    <div id="ov-chat"></div>
+    <div id="ov-name"></div>
+    <div class="ov-bar"><div id="ov-hp"></div></div>
+  </div>
+
+  <div id="hud-opp" class="hud-panel stone game-only">
+    <div class="name"></div>
+    <div class="orbs">
+      <div class="orbrow"><span class="orb-num hp-val">30</span><div class="orb hp-orb"></div></div>
+      <div class="orbrow"><span class="orb-num rune-val">0</span><div class="orb rune-orb"></div></div>
+    </div>
+    <div class="cards"></div>
+  </div>
+
+  <div id="hud-me" class="hud-panel stone game-only">
+    <div class="name"></div>
+    <div class="orbs">
+      <div class="orbrow"><span class="orb-num hp-val">30</span><div class="orb hp-orb"></div></div>
+      <div class="orbrow"><span class="orb-num rune-val">0</span><div class="orb rune-orb"></div></div>
+    </div>
+    <div class="cards"></div>
+  </div>
+
+  <div id="turn-panel" class="game-only">
+    <div id="timer"></div>
+    <button id="btn-end" class="rs-btn big" disabled>End Turn</button>
+    <small class="hint">Enter / E</small>
+  </div>
+
+  <div id="topbar" class="game-only">
+    <button id="btn-rules" class="rs-btn small" title="How to play">?</button>
+    <button id="btn-sound" class="rs-btn small" title="Sound">♪</button>
+    <button id="btn-chat" class="rs-btn small" title="Chat">Chat</button>
+    <button id="btn-leave" class="rs-btn small" title="Leave">Leave</button>
+  </div>
+
+  <div id="look-hint" class="game-only">Drag to look around · right-click for options · R recentres · scroll to lean in</div>
+
+  <div id="prompt" class="hidden"></div>
+  <div id="banner"></div>
+
+  <div id="preview"><canvas></canvas><div class="info"></div></div>
+  <div id="reveal"><div class="who"></div><canvas></canvas></div>
+
+  <div id="osmenu" class="hidden"></div>
+  <div id="chatbox" class="game-only">
+    <div id="chat-log"></div>
+    <div id="quick-chat"></div>
+    <input id="chat-input" maxlength="80" placeholder="Press Enter to chat (try red: or wave: )" autocomplete="off" />
+    <div id="chat-tabs"><button data-tab="all" class="on">All</button><button data-tab="game">Game</button><button data-tab="public">Public</button></div>
+  </div>
+
+  <!-- ===================== menu ===================== -->
+  <div id="menu" class="screen">
+    <div class="menu-card stone">
+      <h1>Gielinor Gambit</h1>
+      <p class="tag">A 1v1 card duel at the Rising Sun Inn, Falador</p>
+      <label class="field">Your name <input id="name" maxlength="12" /></label>
+      <div class="field">Choose your duellist</div>
+      <div id="avatars"></div>
+      <div class="menu-actions">
+        <button id="btn-ai" class="rs-btn big">Duel the Tavern Champion <small>vs computer</small></button>
+        <button id="btn-host" class="rs-btn big">Host Online Duel <small>get a room code</small></button>
+        <div class="join-row">
+          <input id="join-code" maxlength="6" placeholder="ROOM CODE" autocomplete="off" />
+          <button id="btn-join" class="rs-btn">Join</button>
+        </div>
+        <div id="menu-error" class="error"></div>
+      </div>
+      <div class="menu-links">
+        <button id="btn-art" class="rs-btn">Card art: OSRS Wiki pictures</button>
+      </div>
+      <div id="art-status" class="note"></div>
+      <div class="menu-links">
+        <button id="btn-howto" class="rs-btn">How to Play</button>
+        <button id="btn-codex" class="rs-btn">Card Codex</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="waiting" class="screen hidden">
+    <div class="menu-card small stone">
+      <h2 id="wait-title">Waiting...</h2>
+      <div id="room-code">·····</div>
+      <div id="invite" class="hidden">
+        <p>Send this code or link to your opponent:</p>
+        <div class="join-row"><input id="invite-link" readonly /><button id="btn-copy" class="rs-btn">Copy link</button></div>
+      </div>
+      <div class="spinner"></div>
+      <div id="wait-error" class="error"></div>
+      <button id="btn-cancel-wait" class="rs-btn">Back</button>
+    </div>
+  </div>
+
+  <!-- ===================== modals ===================== -->
+  <div id="howto" class="modal hidden">
+    <div class="modal-body rules">
+      <button class="rs-btn small close" data-close>✕</button>
+      <h2>How to Play</h2>
+      <div class="rule-grid">
+        <section>
+          <h3>Goal</h3>
+          <p>You both start with <b>30 Hitpoints</b>. Bring your opponent to <b>0</b> to win.</p>
+          <h3>Runes</h3>
+          <p>Cards cost <b>runes</b> (the blue number). You get <b>1 rune on turn 1</b>, 2 on turn 2... up to 10. They refill every turn. Whoever goes second gets a free <b>Coins</b> card.</p>
+          <h3>Your turn</h3>
+          <ol>
+            <li>You draw a card.</li>
+            <li><b>Play cards</b>: click a glowing card, then click where it goes (a spot on the table, or a target).</li>
+            <li><b>Attack</b>: click one of your glowing monsters, then click an enemy monster or your opponent.</li>
+            <li>Press <b>End Turn</b>.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Monsters</h3>
+          <p><b class="atk">Attack</b> (bottom-left) is the damage it deals. <b class="hp">Health</b> (bottom-right) is how much it can take. When monsters fight, <b>both hit each other</b>. A monster can attack once per turn, starting the turn <i>after</i> you play it.</p>
+          <h3>The Combat Triangle</h3>
+          <div class="triangle">
+            <span class="melee">⚔ Melee</span> beats <span class="ranged">🏹 Ranged</span> beats <span class="magic">✦ Magic</span> beats <span class="melee">⚔ Melee</span>
+          </div>
+          <p>A monster that beats its opponent's style deals <b>DOUBLE damage</b>, whether attacking or hitting back. Hover a target while attacking to see <b>×2</b> hints.</p>
+          <h3>Keywords</h3>
+          <ul class="kw-list">
+            <li><b>Guard</b>: must be attacked first.</li>
+            <li><b>Charge</b>: can attack right away.</li>
+            <li><b>Venom</b>: destroys any monster it damages.</li>
+            <li><b>Vampyric</b>: its damage heals you.</li>
+            <li><b>Frozen</b>: skips its next attack.</li>
+          </ul>
+        </section>
+      </div>
+      <p class="controls"><b>Controls:</b> drag the scene or use arrow keys to look around the tavern · hover any card to read it · right-click or Esc to cancel · Enter to end your turn.</p>
+    </div>
+  </div>
+
+  <div id="codex" class="modal hidden">
+    <div class="modal-body wide">
+      <button class="rs-btn small close" data-close>✕</button>
+      <h2>Card Codex</h2>
+      <p>Both duellists use the same 43-card deck, shuffled.</p>
+      <div id="codex-grid"></div>
+    </div>
+  </div>
+
+  <div id="gameover" class="modal hidden">
+    <div class="modal-body small">
+      <h2>Victory!</h2>
+      <p></p>
+      <div class="menu-actions row">
+        <button id="btn-rematch" class="rs-btn big">Rematch</button>
+        <button id="btn-menu" class="rs-btn big">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
